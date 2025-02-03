@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sets up infrastructure for image moderation using voting
+
+Globals:
+  Function:
+    Timeout: 60
+    Environment:
+      Variables:
+        POWERTOOLS_METRICS_NAMESPACE: ImageModeration
+        POWERTOOLS_LOG_LEVEL: INFO
+
+Resources:
+  ModerateImage:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/content_moderation_voting.asl.yaml
+      DefinitionSubstitutions:
+        AggregateVoteFunctionArn: !GetAtt AggregateVoteFunction.Arn
+        ProcessImageFunctionArn: !GetAtt ProcessImageFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AggregateVoteFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ProcessImageFunction
+        - AWSStepFunctionsFullAccess
+
+  ProcessImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/process_image_function/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Environment:
+        Variables:
+          IMAGE_BUCKET: !Ref ImageBucket
+          POWERTOOLS_SERVICE_NAME: process-image
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ImageBucket
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:*
+              Resource: "*"
+
+  AggregateVoteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/aggregate_vote_function/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      MemorySize: 128
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: aggregate-votes
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:*
+              Resource: "*"
+
+  ImageBucket:
+    Type: AWS::S3::Bucket
+
+Outputs:
+  ImageBucket:
+    Value: !Ref ImageBucket
+  StatemachineARN:
+    Value: !GetAtt ModerateImage.Arn

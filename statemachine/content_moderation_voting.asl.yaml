@@ -1,0 +1,45 @@
+Comment: Process an image for content moderation
+StartAt: ProcessImages
+States:
+  ProcessImages:
+    Type: Map
+    ItemProcessor:
+      ProcessorConfig:
+        Mode: INLINE
+      StartAt: ProcessImage
+      States:
+        ProcessImage:
+          Type: Task
+          Resource: "${ProcessImageFunctionArn}"
+          OutputPath: "$"
+          Parameters:
+            Payload.$: "$"
+          Retry:
+            - ErrorEquals:
+                - Lambda.ServiceException
+                - Lambda.AWSLambdaException
+                - Lambda.SdkClientException
+                - Lambda.TooManyRequestsException
+                - Bedrock.ThrottlingException
+              IntervalSeconds: 15
+              MaxAttempts: 3
+              BackoffRate: 5
+          End: True
+    Next: AggregateVotes
+    MaxConcurrency: 1
+  AggregateVotes:
+    Type: Task
+    Resource: "${AggregateVoteFunctionArn}"
+    OutputPath: "$"
+    Parameters:
+      Payload.$: "$"
+    Retry:
+      - ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 2
+        MaxAttempts: 3
+        BackoffRate: 2
+    End: True
