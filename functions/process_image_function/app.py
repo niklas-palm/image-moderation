@@ -18,8 +18,8 @@ bedrock = boto3.client(
     region_name="us-west-2",
 )
 
-# MODEL_ID = "us.amazon.nova-lite-v1:0"
-MODEL_ID = "us.amazon.nova-pro-v1:0"
+MODEL_ID = "us.amazon.nova-lite-v1:0"
+# MODEL_ID = "us.amazon.nova-pro-v1:0"
 
 
 def get_prompt_payload(image_base64, prompt, filetype, prefill=None):

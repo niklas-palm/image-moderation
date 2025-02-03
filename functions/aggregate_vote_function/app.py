@@ -12,8 +12,8 @@ bedrock = boto3.client(
     region_name="us-west-2",
 )
 
-# MODEL_ID = "us.amazon.nova-lite-v1:0"
-MODEL_ID = "us.amazon.nova-pro-v1:0"
+MODEL_ID = "us.amazon.nova-lite-v1:0"
+# MODEL_ID = "us.amazon.nova-pro-v1:0"
 
 
 def get_prompt_payload(prompt, prefill=None):
@@ -39,7 +39,6 @@ def get_prompt_payload(prompt, prefill=None):
         )
 
     prompt_config = {
-        # "system": "You are a bla bla", # Working with images/videos, it's best to include this in the final prompt instead of in the system prompt (which is added to the beginning of the prompt payload.)
         "inferenceConfig": {"temperature": 0},
         "messages": messages,
     }
